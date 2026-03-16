@@ -1,0 +1,9 @@
+.bouquets_page {
+  padding: 60px 20px;
+}
+
+.bouquets_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 20px;
+}

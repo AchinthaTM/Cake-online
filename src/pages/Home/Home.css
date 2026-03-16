@@ -1,0 +1,95 @@
+.home {
+  width: 100%;
+}
+
+.featured_cakes {
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.featured_container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.featured_header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.featured_header h2 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.featured_header p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.cakes_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.view_all_btn_container {
+  display: flex;
+  justify-content: center;
+}
+
+.view_all_btn {
+  display: inline-block;
+  padding: 15px 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.view_all_btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+@media (max-width: 768px) {
+  .featured_cakes {
+    padding: 40px 15px;
+  }
+
+  .featured_header h2 {
+    font-size: 2rem;
+  }
+
+  .cakes_grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .featured_header h2 {
+    font-size: 1.5rem;
+  }
+
+  .featured_header p {
+    font-size: 0.95rem;
+  }
+
+  .cakes_grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .view_all_btn {
+    padding: 12px 30px;
+    font-size: 0.9rem;
+  }
+}

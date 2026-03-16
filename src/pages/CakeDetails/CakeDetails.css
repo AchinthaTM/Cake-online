@@ -1,0 +1,372 @@
+.cake_details_page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 300px;
+}
+
+.back_button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 2px solid #ff6b9d;
+  color: #ff6b9d;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.back_button:hover {
+  background: linear-gradient(135deg, #ff6b9d 0%, #ffa06b 100%);
+  color: white;
+  transform: translateX(-4px);
+}
+
+.cake_details_container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.cake_details_image {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  height: 500px;
+}
+
+.cake_details_image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cake_details_badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #ff6b9d 0%, #ffa06b 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+}
+
+.cake_details_info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cake_details_name {
+  font-family: "Inter", sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #ff6b9d 0%, #ffa06b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.cake_details_description {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  color: #666;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.cake_details_specs {
+  display: flex;
+  gap: 30px;
+  padding: 20px 0;
+  border-top: 2px solid #f0f0f0;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.spec_item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.spec_item svg {
+  color: #ff6b9d;
+  flex-shrink: 0;
+}
+
+.cake_ingredients h3 {
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d2d2d;
+  margin: 0 0 12px 0;
+}
+
+.cake_ingredients ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.cake_ingredients li {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #666;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.cake_ingredients li::before {
+  content: "✓";
+  color: #ff6b9d;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.cake_purchase {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, #fff0f5 0%, #fff5f0 100%);
+  border-radius: 16px;
+  margin-top: auto;
+}
+
+.cake_price_section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price_label {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #4a4a4a;
+}
+
+.cake_price_large {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.cake_price_large .currency {
+  font-family: "Inter", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff6b9d;
+}
+
+.cake_price_large .amount {
+  font-family: "Inter", sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  color: #ff6b9d;
+}
+
+.quantity_selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quantity_label {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #4a4a4a;
+}
+
+.quantity_controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.quantity_btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #ff6b9d 0%, #ffa06b 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity_btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+}
+
+.quantity_btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity_value {
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d2d2d;
+  min-width: 30px;
+  text-align: center;
+}
+
+.add_to_cart_large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ff6b9d 0%, #ffa06b 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+}
+
+.add_to_cart_large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 157, 0.5);
+}
+
+.add_to_cart_large:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .cake_details_page {
+    padding: 50px 60px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .cake_details_page {
+    padding: 40px 40px;
+  }
+
+  .cake_details_container {
+    gap: 40px;
+    padding: 30px;
+  }
+
+  .cake_details_name {
+    font-size: 36px;
+  }
+
+  .cake_details_image {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cake_details_page {
+    padding: 30px 24px;
+  }
+
+  .cake_details_container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 24px;
+  }
+
+  .cake_details_image {
+    height: 350px;
+  }
+
+  .cake_details_name {
+    font-size: 32px;
+  }
+
+  .cake_details_description {
+    font-size: 15px;
+  }
+
+  .cake_details_specs {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cake_ingredients ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .cake_details_page {
+    padding: 24px 16px;
+  }
+
+  .cake_details_container {
+    padding: 20px;
+  }
+
+  .cake_details_image {
+    height: 300px;
+  }
+
+  .cake_details_name {
+    font-size: 28px;
+  }
+
+  .cake_details_description {
+    font-size: 14px;
+  }
+
+  .cake_purchase {
+    padding: 20px;
+  }
+
+  .cake_price_large .amount {
+    font-size: 32px;
+  }
+
+  .add_to_cart_large {
+    font-size: 16px;
+    padding: 14px 24px;
+  }
+}
