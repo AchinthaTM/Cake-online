@@ -50,7 +50,7 @@ const HeroSlideshow = () => {
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`slide Rs{index === currentSlide ? 'active' : ''}`}
+            className={`slide ${index === currentSlide ? 'active' : ''}`}
           >
             <img src={slide.image} alt={slide.alt} />
           </div>
@@ -100,9 +100,9 @@ const HeroSlideshow = () => {
           {slides.map((_, index) => (
             <button
               key={index}
-              className={`dot Rs{index === currentSlide ? 'active' : ''}`}
+              className={`dot ${index === currentSlide ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
-              aria-label={`Go to slide Rs{index + 1}`}
+              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
