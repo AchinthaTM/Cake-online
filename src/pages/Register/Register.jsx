@@ -59,27 +59,25 @@ const Register = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!validateForm()) return;
 
     setLoading(true);
-    
-    setTimeout(() => {
-      const result = register({
-        ...formData,
-        role,
-      });
 
-      if (result.success) {
-        navigate(role === 'seller' ? '/seller/dashboard' : '/');
-      } else {
-        setError(result.message);
-      }
-      setLoading(false);
-    }, 500);
+    const result = await register({
+      ...formData,
+      role,
+    });
+
+    if (result.success) {
+      navigate(role === 'seller' ? '/seller/dashboard' : '/');
+    } else {
+      setError(result.message);
+    }
+    setLoading(false);
   };
 
   return (

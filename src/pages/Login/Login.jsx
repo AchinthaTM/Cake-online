@@ -21,7 +21,7 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -32,17 +32,15 @@ const Login = () => {
 
     setLoading(true);
 
-    setTimeout(() => {
-      const result = login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password);
 
-      if (result.success) {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
-      } else {
-        setError(result.message);
-      }
-      setLoading(false);
-    }, 500);
+    if (result.success) {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
+    } else {
+      setError(result.message);
+    }
+    setLoading(false);
   };
 
   return (

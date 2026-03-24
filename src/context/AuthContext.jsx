@@ -6,47 +6,57 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const register = (userData) => {
-    // Store user data in localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userExists = users.find(u => u.email === userData.email);
-    
-    if (userExists) {
-      return { success: false, message: 'Email already registered' };
+  const register = async (userData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Registration failed' };
+      }
+
+      setUser(data.data.user);
+      setIsAuthenticated(true);
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      localStorage.setItem('token', data.data.token);
+      return { success: true, message: 'Registration successful' };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
     }
-
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    setUser(newUser);
-    setIsAuthenticated(true);
-    return { success: true, message: 'Registration successful' };
   };
 
-  const login = (email, password) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const foundUser = users.find(u => u.email === email && u.password === password);
+  const login = async (email, password) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
 
-    if (!foundUser) {
-      return { success: false, message: 'Invalid email or password' };
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Login failed' };
+      }
+
+      setUser(data.data.user);
+      setIsAuthenticated(true);
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      localStorage.setItem('token', data.data.token);
+      return { success: true, message: 'Login successful' };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
     }
-
-    setUser(foundUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('currentUser', JSON.stringify(foundUser));
-    return { success: true, message: 'Login successful' };
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
   };
 
   const updateUser = (updatedData) => {

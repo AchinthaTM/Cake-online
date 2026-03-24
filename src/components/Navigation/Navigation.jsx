@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Navigation.css';
@@ -6,10 +6,29 @@ import './Navigation.css';
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const [isCakesActive, setIsCakesActive] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const cakesSection = document.getElementById('cakes');
+
+      if (cakesSection) {
+        const sectionPosition = cakesSection.offsetTop;
+        const scrollPosition = window.pageYOffset;
+
+        setIsCakesActive(scrollPosition >= sectionPosition - 100);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <nav className="nav">
@@ -17,7 +36,8 @@ const Navigation = () => {
         <Link to="/" className="logo_link">
           <div className="logo_container">
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              type="image/svg+xml"
+              href="/SweetDelight.png"
               width="24"
               height="24"
               viewBox="0 0 24 24"
@@ -43,12 +63,13 @@ const Navigation = () => {
         </Link>
       </div>
 
-      <div className={`nav_center Rs{isMenuOpen ? 'active' : ''}`}>
+      <div className={`nav_center ${isMenuOpen ? 'active' : ''}`}>
         <Link to="/" className="nav_link">Home</Link>
-        <Link to="/cakes" className="nav_link">Cakes</Link>
+        <Link to="/cakes" className={`nav_link ${isCakesActive ? 'active' : ''}`}>
+          Cakes
+        </Link>
         <Link to="/bouquets" className="nav_link">Bouquets</Link>
         <Link to="/gallery" className="nav_link">Gallery</Link>
-        <Link to="/cart" className="nav_link">Cart</Link>
         <a href="#about" className="nav_link">About Us</a>
         <a href="#contact" className="nav_link">Contact</a>
       </div>

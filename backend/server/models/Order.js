@@ -133,7 +133,7 @@ orderSchema.pre('save', function(next) {
   if (this.isNew && !this.orderNumber) {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-    this.orderNumber = `SDRs{timestamp}Rs{random}`;
+    this.orderNumber = `SD${timestamp}${random}`;
   }
   next();
 });
