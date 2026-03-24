@@ -125,17 +125,15 @@ const orderSchema = new mongoose.Schema({
 // Indexes for better query performance
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ seller: 1, status: 1 });
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ 'delivery.scheduledDate': 1 });
 
-// Pre-save middleware to generate order number
-orderSchema.pre('save', function(next) {
+// Pre-validate middleware to generate order number
+orderSchema.pre('validate', function() {
   if (this.isNew && !this.orderNumber) {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();
     this.orderNumber = `SD${timestamp}${random}`;
   }
-  next();
 });
 
 // Virtual for order age

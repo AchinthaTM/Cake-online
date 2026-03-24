@@ -7,8 +7,9 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [cakes, setCakes] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('orders');
   const [bankDetails, setBankDetails] = useState({
     bankName: '',
     accountNumber: '',
@@ -31,12 +32,49 @@ const SellerDashboard = () => {
       return;
     }
 
-    // Load seller's cakes from localStorage
-    const sellerCakes = JSON.parse(localStorage.getItem(`cakes_Rs{user.id}`) || '[]');
-    setCakes(sellerCakes);
+    const fetchCakes = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/products/seller', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          const formattedCakes = data.data.map(p => ({
+            id: p._id,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.category,
+            image: p.images && p.images.length > 0 ? p.images[0].url : '',
+            createdAt: p.createdAt
+          }));
+          setCakes(formattedCakes);
+        }
+      } catch (err) {
+        console.error('Error fetching products', err);
+      }
+    };
+    fetchCakes();
 
-    // Load bank details
-    const savedBankDetails = JSON.parse(localStorage.getItem(`bank_Rs{user.id}`) || 'null');
+    const fetchOrders = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/orders/seller', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setOrders(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching orders', err);
+      }
+    };
+    fetchOrders();
+
+    // Load bank details (fixing Rs typo)
+    const savedBankDetails = JSON.parse(localStorage.getItem(`bank_${user.id}`) || 'null');
     if (savedBankDetails) {
       setBankDetails(savedBankDetails);
     }
@@ -49,7 +87,7 @@ const SellerDashboard = () => {
     });
   };
 
-  const handleAddCake = (e) => {
+  const handleAddCake = async (e) => {
     e.preventDefault();
     
     if (!newCake.name || !newCake.price || !newCake.image) {
@@ -57,33 +95,93 @@ const SellerDashboard = () => {
       return;
     }
 
-    const cake = {
-      id: Date.now(),
-      sellerId: user.id,
-      ...newCake,
-      price: parseFloat(newCake.price),
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedCakes = [...cakes, cake];
-    setCakes(updatedCakes);
-    localStorage.setItem(`cakes_Rs{user.id}`, JSON.stringify(updatedCakes));
-    
-    setNewCake({
-      name: '',
-      description: '',
-      price: '',
-      category: 'Chocolate',
-      image: '',
-    });
-    setShowAddForm(false);
-    alert('Cake added successfully!');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newCake.name,
+          description: newCake.description,
+          price: parseFloat(newCake.price),
+          category: newCake.category,
+          image: newCake.image
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        const p = data.data;
+        const formattedCake = {
+            id: p._id,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.category,
+            image: p.images && p.images.length > 0 ? p.images[0].url : '',
+            createdAt: p.createdAt
+        };
+        setCakes([formattedCake, ...cakes]);
+        
+        setNewCake({
+          name: '',
+          description: '',
+          price: '',
+          category: 'Chocolate',
+          image: '',
+        });
+        setShowAddForm(false);
+        alert('Cake added successfully!');
+      } else {
+        alert(data.message || 'Error adding cake');
+      }
+    } catch (err) {
+      alert('Server error while adding cake');
+    }
   };
 
-  const handleDeleteCake = (cakeId) => {
-    const updatedCakes = cakes.filter(c => c.id !== cakeId);
-    setCakes(updatedCakes);
-    localStorage.setItem(`cakes_Rs{user.id}`, JSON.stringify(updatedCakes));
+  const handleDeleteCake = async (cakeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/products/${cakeId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCakes(cakes.filter(c => c.id !== cakeId));
+      } else {
+        alert(data.message || 'Error deleting cake');
+      }
+    } catch (err) {
+      alert('Server error deleting cake');
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+        alert(newStatus === 'confirmed' ? 'Order Accepted! Email sent to buyer.' : 'Order Rejected. Email sent to buyer.');
+      } else {
+        alert(data.message || 'Error updating order');
+      }
+    } catch (err) {
+      alert('Server error updating order status');
+    }
   };
 
   const handleBankInputChange = (e) => {
@@ -95,7 +193,7 @@ const SellerDashboard = () => {
 
   const handleSaveBankDetails = (e) => {
     e.preventDefault();
-    localStorage.setItem(`bank_Rs{user.id}`, JSON.stringify(bankDetails));
+    localStorage.setItem(`bank_${user.id}`, JSON.stringify(bankDetails));
     setShowBankForm(false);
     alert('Bank details saved successfully!');
   };
@@ -121,19 +219,25 @@ const SellerDashboard = () => {
         {/* Tabs */}
         <div className="dashboard_tabs">
           <button 
-            className={`tab_btn Rs{activeTab === 'products' ? 'active' : ''}`}
+            className={`tab_btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            Orders
+          </button>
+          <button 
+            className={`tab_btn ${activeTab === 'products' ? 'active' : ''}`}
             onClick={() => setActiveTab('products')}
           >
             Products
           </button>
           <button 
-            className={`tab_btn Rs{activeTab === 'bank' ? 'active' : ''}`}
+            className={`tab_btn ${activeTab === 'bank' ? 'active' : ''}`}
             onClick={() => setActiveTab('bank')}
           >
             Bank Details
           </button>
           <button 
-            className={`tab_btn Rs{activeTab === 'payments' ? 'active' : ''}`}
+            className={`tab_btn ${activeTab === 'payments' ? 'active' : ''}`}
             onClick={() => setActiveTab('payments')}
           >
             Payments
@@ -141,6 +245,78 @@ const SellerDashboard = () => {
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'orders' && (
+          <div className="orders_section" style={{ marginTop: '20px' }}>
+            <div className="section_header">
+              <h2>My Orders</h2>
+              <p>Accept new incoming orders below. This automatically emails the buyer.</p>
+            </div>
+            <div className="cakes_table">
+              {orders.length > 0 ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Order Number</th>
+                      <th>Customer Details</th>
+                      <th>Ordered Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order._id}>
+                        <td>{order.orderNumber || '...'+order._id.substring(order._id.length-6)}</td>
+                        <td>
+                          <strong>{order.customer.firstName} {order.customer.lastName}</strong>
+                          <div style={{fontSize: '0.85rem', color: '#666'}}>{order.customer.email}</div>
+                          <div style={{fontSize: '0.85rem', color: '#666'}}>
+                            {order.delivery?.address?.street}, {order.delivery?.address?.city}
+                          </div>
+                        </td>
+                        <td>
+                          <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '0.9rem' }}>
+                            {order.items.map((item, idx) => (
+                              <li key={idx}>{item.quantity}x {item.product ? item.product.name : 'Unknown'}</li>
+                            ))}
+                          </ul>
+                        </td>
+                        <td>Rs{order.total.toFixed(2)}</td>
+                        <td>
+                          <span className={`status_${order.status.toLowerCase()}`}>{order.status}</span>
+                        </td>
+                        <td>
+                          {order.status === 'pending' && (
+                            <>
+                              <button 
+                                className="edit_btn" 
+                                style={{ backgroundColor: '#4CAF50', color: 'white', border: 'none', marginRight: '8px', cursor: 'pointer' }}
+                                onClick={() => handleUpdateOrderStatus(order._id, 'confirmed')}
+                              >
+                                Accept
+                              </button>
+                              <button 
+                                className="delete_btn"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleUpdateOrderStatus(order._id, 'cancelled')}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty_cakes"><p>You have no pending or past orders.</p></div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'products' && (
           <>
             {/* Stats */}
@@ -182,7 +358,7 @@ const SellerDashboard = () => {
                 </div>
                 <div className="stat_content">
                   <h3>Orders</h3>
-                  <p className="stat_value">0</p>
+                  <p className="stat_value">{orders.length}</p>
                 </div>
               </div>
             </div>
