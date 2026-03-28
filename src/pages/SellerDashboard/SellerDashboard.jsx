@@ -28,6 +28,8 @@ const SellerDashboard = () => {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingCake, setEditingCake] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -49,6 +51,8 @@ const SellerDashboard = () => {
             description: p.description,
             price: p.price,
             category: p.category,
+            stock: p.stock || 0,
+            isActive: p.isActive !== undefined ? p.isActive : true,
             image: p.images && p.images.length > 0 
               ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
               : '',
@@ -251,6 +255,87 @@ const SellerDashboard = () => {
       alert('Server error saving bank details');
     }
   };
+
+  const handleEditClick = (cake) => {
+    setEditingCake({
+      ...cake,
+      // Reset the file fields since we don't transfer the file object itself
+    });
+    setImagePreview(cake.image);
+    setSelectedFile(null);
+    setShowEditForm(true);
+    setShowAddForm(false);
+  };
+
+  const handleUpdateInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditingCake({
+      ...editingCake,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleUpdateCake = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('name', editingCake.name);
+      formData.append('description', editingCake.description);
+      formData.append('price', editingCake.price);
+      formData.append('category', editingCake.category);
+      formData.append('stock', editingCake.stock);
+      formData.append('isActive', editingCake.isActive);
+      
+      if (selectedFile) {
+        formData.append('image', selectedFile);
+      }
+
+      const response = await fetch(`http://localhost:5000/api/products/${editingCake.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        const p = data.data;
+        const updatedCake = {
+          id: p._id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          category: p.category,
+          stock: p.stock,
+          isActive: p.isActive,
+          image: p.images && p.images.length > 0 
+            ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
+            : '',
+          createdAt: p.createdAt
+        };
+
+        setCakes(cakes.map(c => c.id === updatedCake.id ? updatedCake : c));
+        setShowEditForm(false);
+        setEditingCake(null);
+        setSelectedFile(null);
+        setImagePreview(null);
+        alert('Cake updated successfully!');
+      } else {
+        alert(data.message || 'Error updating cake');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Server error while updating cake');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [loading, setLoading] = useState(false);
 
   const totalRevenue = cakes.reduce((sum, cake) => sum + (cake.price || 0), 0);
 
@@ -535,6 +620,127 @@ const SellerDashboard = () => {
                   <button type="submit" className="submit_btn">Add Cake</button>
                 </form>
               )}
+
+              {showEditForm && editingCake && (
+                <form className="add_cake_form edit_form" onSubmit={handleUpdateCake}>
+                  <div className="section_header">
+                    <h3>Edit Cake: {editingCake.name}</h3>
+                  </div>
+                  <div className="form_row">
+                    <div className="form_group">
+                      <label>Cake Name *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={editingCake.name}
+                        onChange={handleUpdateInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="form_group">
+                      <label>Price *</label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={editingCake.price}
+                        onChange={handleUpdateInputChange}
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form_group">
+                    <label>Description</label>
+                    <textarea
+                      name="description"
+                      value={editingCake.description}
+                      onChange={handleUpdateInputChange}
+                      rows="3"
+                    />
+                  </div>
+
+                  <div className="form_row">
+                    <div className="form_group">
+                      <label>Category</label>
+                      <select 
+                        name="category" 
+                        value={editingCake.category}
+                        onChange={handleUpdateInputChange}
+                      >
+                        <option>Chocolate</option>
+                        <option>Vanilla</option>
+                        <option>Fruit</option>
+                        <option>Special</option>
+                        <option>Caramel</option>
+                        <option>Strawberry</option>
+                        <option>Red Velvet</option>
+                        <option>Butter</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div className="form_group">
+                      <label>Stock Quantity</label>
+                      <input
+                        type="number"
+                        name="stock"
+                        value={editingCake.stock}
+                        onChange={handleUpdateInputChange}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form_row">
+                    <div className="form_group">
+                      <label>Cake Image (Leave blank to keep current)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="file_input"
+                      />
+                      {imagePreview && (
+                        <div className="image_preview_container" style={{ marginTop: '10px' }}>
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            style={{ maxWidth: '100px', borderRadius: '8px', border: '1px solid #ddd' }} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="form_group" style={{ justifyContent: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          name="isActive"
+                          checked={editingCake.isActive}
+                          onChange={handleUpdateInputChange}
+                          style={{ width: '20px', height: '20px' }}
+                        />
+                        <span>Product is Active (Visible to customers)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form_actions" style={{ display: 'flex', gap: '10px' }}>
+                    <button type="submit" className="submit_btn" disabled={loading}>
+                      {loading ? 'Updating...' : 'Save Changes'}
+                    </button>
+                    <button type="button" className="cancel_btn" onClick={() => setShowEditForm(false)} style={{
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             {/* Cakes List */}
@@ -567,10 +773,12 @@ const SellerDashboard = () => {
                           </td>
                           <td>Rs{cake.price.toFixed(2)}</td>
                           <td>
-                            <span className="status_active">Active</span>
+                            <span className={cake.isActive ? 'status_active' : 'status_inactive'}>
+                              {cake.isActive ? 'Active' : 'Hidden'}
+                            </span>
                           </td>
                           <td>
-                            <button className="edit_btn">Edit</button>
+                            <button className="edit_btn" onClick={() => handleEditClick(cake)}>Edit</button>
                             <button 
                               className="delete_btn"
                               onClick={() => handleDeleteCake(cake.id)}

@@ -84,10 +84,10 @@ const TopBar = () => {
   const highlightText = (text, query) => {
     if (!query.trim()) return text;
     
-    const parts = text.split(new RegExp(`(Rs{query})`, 'gi'));
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return parts.map((part, index) => 
       part.toLowerCase() === query.toLowerCase() 
-        ? `<mark key=Rs{index}>Rs{part}</mark>` 
+        ? `<mark key=${index}>${part}</mark>` 
         : part
     ).join('');
   };
@@ -96,7 +96,7 @@ const TopBar = () => {
   const HighlightedText = ({ text, query }) => {
     if (!query.trim()) return <span>{text}</span>;
     
-    const parts = text.split(new RegExp(`(Rs{query})`, 'gi'));
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return (
       <span>
         {parts.map((part, index) => 
@@ -130,7 +130,7 @@ const TopBar = () => {
   };
 
   const handleCakeClick = (cakeId) => {
-    navigate(`/cakes/Rs{cakeId}`);
+    navigate(`/cakes/${cakeId}`);
     setSearchQuery('');
     setShowResults(false);
   };

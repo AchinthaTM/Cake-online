@@ -21,7 +21,9 @@ export default function Home() {
             description: p.description,
             price: p.price,
             category: p.category,
-            image: p.images && p.images.length > 0 ? p.images[0].url : ''
+            image: p.images && p.images.length > 0 
+              ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
+              : ''
           }));
           setCakes(formattedCakes);
         }

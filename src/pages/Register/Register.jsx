@@ -118,7 +118,7 @@ const Register = () => {
 
           {/* Role Selection */}
           <div className="role_selector">
-            <label className={`role_option Rs{role === 'buyer' ? 'active' : ''}`}>
+            <label className={`role_option ${role === 'buyer' ? 'active' : ''}`}>
               <input
                 type="radio"
                 name="role"
@@ -136,7 +136,7 @@ const Register = () => {
               </div>
             </label>
 
-            <label className={`role_option Rs{role === 'seller' ? 'active' : ''}`}>
+            <label className={`role_option ${role === 'seller' ? 'active' : ''}`}>
               <input
                 type="radio"
                 name="role"

@@ -9,7 +9,7 @@ const BouquetCard = ({ bouquet, onAddToCart }) => {
   };
 
   return (
-    <Link to={`/bouquets/Rs{bouquet.id}`} className="bouquet_card">
+    <Link to={`/bouquets/${bouquet.id}`} className="bouquet_card">
       <div className="bouquet_image_container">
         <img src={bouquet.image} alt={bouquet.name} className="bouquet_image" />
         <div className="bouquet_badge">{bouquet.category}</div>
@@ -28,7 +28,7 @@ const BouquetCard = ({ bouquet, onAddToCart }) => {
           <button 
             className="add_to_cart_btn" 
             onClick={handleAddToCart}
-            aria-label={`Add Rs{bouquet.name} to cart`}
+            aria-label={`Add ${bouquet.name} to cart`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

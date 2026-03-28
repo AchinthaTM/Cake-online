@@ -10,22 +10,24 @@ const Cakes = () => {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    const fetchCakes = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/products');
-        const data = await response.json();
-        if (data.success) {
-          const formattedCakes = data.data.map(p => ({
-            id: p._id,
-            name: p.name,
-            shortDescription: p.description.length > 50 ? p.description.substring(0, 47) + '...' : p.description,
-            description: p.description,
-            price: p.price,
-            category: p.category,
-            image: p.images && p.images.length > 0 ? p.images[0].url : ''
-          }));
-          setCakes(formattedCakes);
-        }
+      const fetchCakes = async () => {
+        try {
+          const response = await fetch('http://localhost:5000/api/products?type=cake');
+          const data = await response.json();
+          if (data.success) {
+            const formattedCakes = data.data.map(p => ({
+              id: p._id,
+              name: p.name,
+              shortDescription: p.description.length > 50 ? p.description.substring(0, 47) + '...' : p.description,
+              description: p.description,
+              price: p.price,
+              category: p.category,
+              image: p.images && p.images.length > 0 
+                ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
+                : ''
+            }));
+            setCakes(formattedCakes);
+          }
       } catch (error) {
         console.error("Error fetching cakes:", error);
       } finally {

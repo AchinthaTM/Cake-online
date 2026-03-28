@@ -23,7 +23,7 @@ const AdminDashboard = () => {
           {menuItems.map(item => (
             <button
               key={item.id}
-              className={`sidebar_item Rs{activeTab === item.id ? 'active' : ''}`}
+              className={`sidebar_item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => setActiveTab(item.id)}
             >
               <span className="icon">{item.icon}</span>
