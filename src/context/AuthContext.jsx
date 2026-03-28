@@ -42,6 +42,15 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message || 'Login failed' };
       }
 
+      if (data.verificationRequired) {
+        return { 
+          success: true, 
+          verificationRequired: true, 
+          email: data.email,
+          message: data.message 
+        };
+      }
+
       setUser(data.data.user);
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(data.data.user));
@@ -59,49 +68,111 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
+  const verifyOTP = async (email, otp) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Verification failed' };
+      }
+
+      setUser(data.data.user);
+      setIsAuthenticated(true);
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      localStorage.setItem('token', data.data.token);
+      return { success: true, message: 'Verification successful' };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
+    }
+  };
+
+  const resendOTP = async (email) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Failed to resend code' };
+      }
+
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
+    }
+  };
+
+  const verifyEmailChange = async (otp) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/verify-email-change', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ otp })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Verification failed' };
+      }
+
+      setUser(data.data);
+      localStorage.setItem('currentUser', JSON.stringify(data.data));
+      return { success: true, message: 'Email verified successfully' };
+    } catch (error) {
+      return { success: false, message: 'Server error during email verification' };
+    }
+  };
+
   const updateUser = (updatedData) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
-    
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userIndex = users.findIndex(u => u.id === user.id);
-    if (userIndex !== -1) {
-      users[userIndex] = updatedUser;
-      localStorage.setItem('users', JSON.stringify(users));
-    }
     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
   };
 
   // simulate a Google sign-in flow
-  const loginWithGoogle = (preferredRole = 'buyer') => {
-    // in a real app you would call Google's OAuth APIs here.
-    // for this demo we'll just prompt for an email address
+  const loginWithGoogle = async (preferredRole = 'buyer') => {
     const email = window.prompt('Enter your Google email');
     if (!email) {
       return { success: false, message: 'Google sign-in cancelled' };
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    let foundUser = users.find(u => u.email === email);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/google-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          firstName: 'Google',
+          lastName: 'User',
+          role: preferredRole || 'buyer'
+        })
+      });
+      const data = await response.json();
 
-    if (!foundUser) {
-      // create a basic user record from Google info
-      foundUser = {
-        id: Date.now(),
-        firstName: 'Google',
-        lastName: 'User',
-        email,
-        role: preferredRole || 'buyer',
-        createdAt: new Date().toISOString(),
-      };
-      users.push(foundUser);
-      localStorage.setItem('users', JSON.stringify(users));
+      if (data.success) {
+        setUser(data.data.user);
+        setIsAuthenticated(true);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+        localStorage.setItem('token', data.data.token);
+        return { success: true, message: 'Google login successful' };
+      } else {
+        return { success: false, message: data.message || 'Google login failed' };
+      }
+    } catch (err) {
+      return { success: false, message: 'Server error during Google login' };
     }
-
-    setUser(foundUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('currentUser', JSON.stringify(foundUser));
-    return { success: true, message: 'Google login successful' };
   };
 
   return (
@@ -114,6 +185,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateUser,
         loginWithGoogle,
+        verifyOTP,
+        resendOTP,
+        verifyEmailChange,
       }}
     >
       {children}

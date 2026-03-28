@@ -2,31 +2,45 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const { auth } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // @route   POST /api/products
 // @desc    Create a product
 // @access  Private (Seller only)
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, category, image } = req.body;
+    const { name, description, price, category } = req.body;
     
-    // Convert frontend image string to backend images array
-    const images = image ? [{ url: image }] : [];
+    let imageUrl = '';
+    
+    if (req.file) {
+      // Store path relative to the root (since server.js serves /uploads statically)
+      imageUrl = `/uploads/products/${req.file.filename}`;
+    } else if (req.body.image) {
+      // Fallback for URL if provided (though we are moving to file upload)
+      imageUrl = req.body.image;
+    }
+
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'Please upload an image' });
+    }
+
+    const images = [{ url: imageUrl }];
 
     const product = await Product.create({
       name,
       description,
-      price,
+      price: parseFloat(price),
       category,
       images,
       seller: req.user._id,
-      stock: 10 // Defaulting stock
+      stock: 10
     });
 
     res.status(201).json({ success: true, data: product });
   } catch (error) {
     console.error('Error creating product:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(400).json({ success: false, message: error.message || 'Server error' });
   }
 });
 

@@ -104,7 +104,13 @@ const Navigation = () => {
         
         {isAuthenticated ? (
           <div className="user_menu">
-            <span className="user_name">{user?.firstName}</span>
+            <Link 
+              to={user?.role === 'seller' ? '/seller/dashboard' : '/buyer/dashboard'} 
+              className="user_name_link"
+            >
+              <span className="user_name">{user?.firstName}</span>
+            </Link>
+            <button onClick={logout} className="logout_btn">Logout</button>
           </div>
         ) : null}
       </div>

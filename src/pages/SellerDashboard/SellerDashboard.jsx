@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ProfileSettings from '../../components/ProfileSettings/ProfileSettings';
 import './SellerDashboard.css';
 
 const SellerDashboard = () => {
@@ -25,6 +26,8 @@ const SellerDashboard = () => {
     category: 'Chocolate',
     image: '',
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -46,7 +49,9 @@ const SellerDashboard = () => {
             description: p.description,
             price: p.price,
             category: p.category,
-            image: p.images && p.images.length > 0 ? p.images[0].url : '',
+            image: p.images && p.images.length > 0 
+              ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
+              : '',
             createdAt: p.createdAt
           }));
           setCakes(formattedCakes);
@@ -73,10 +78,23 @@ const SellerDashboard = () => {
     };
     fetchOrders();
 
-    // Load bank details (fixing Rs typo)
-    const savedBankDetails = JSON.parse(localStorage.getItem(`bank_${user.id}`) || 'null');
-    if (savedBankDetails) {
-      setBankDetails(savedBankDetails);
+    // Load bank details from DB
+    if (user && user.role === 'seller' && !bankDetails.bankName) {
+      const fetchBankDetails = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('http://localhost:5000/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+          if (data.success && data.data.bankDetails) {
+            setBankDetails(data.data.bankDetails);
+          }
+        } catch (err) {
+          console.error('Error loading bank details:', err);
+        }
+      };
+      fetchBankDetails();
     }
   }, [user, navigate]);
 
@@ -87,29 +105,41 @@ const SellerDashboard = () => {
     });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddCake = async (e) => {
     e.preventDefault();
     
-    if (!newCake.name || !newCake.price || !newCake.image) {
-      alert('Please fill in all required fields');
+    if (!newCake.name || !newCake.price || !selectedFile) {
+      alert('Please fill in all required fields and upload an image');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('name', newCake.name);
+      formData.append('description', newCake.description);
+      formData.append('price', newCake.price);
+      formData.append('category', newCake.category);
+      formData.append('image', selectedFile);
+
       const response = await fetch('http://localhost:5000/api/products', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: newCake.name,
-          description: newCake.description,
-          price: parseFloat(newCake.price),
-          category: newCake.category,
-          image: newCake.image
-        })
+        body: formData
       });
       
       const data = await response.json();
@@ -121,7 +151,9 @@ const SellerDashboard = () => {
             description: p.description,
             price: p.price,
             category: p.category,
-            image: p.images && p.images.length > 0 ? p.images[0].url : '',
+            image: p.images && p.images.length > 0 
+              ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) 
+              : '',
             createdAt: p.createdAt
         };
         setCakes([formattedCake, ...cakes]);
@@ -133,6 +165,8 @@ const SellerDashboard = () => {
           category: 'Chocolate',
           image: '',
         });
+        setSelectedFile(null);
+        setImagePreview(null);
         setShowAddForm(false);
         alert('Cake added successfully!');
       } else {
@@ -191,11 +225,31 @@ const SellerDashboard = () => {
     });
   };
 
-  const handleSaveBankDetails = (e) => {
+  const handleSaveBankDetails = async (e) => {
     e.preventDefault();
-    localStorage.setItem(`bank_${user.id}`, JSON.stringify(bankDetails));
-    setShowBankForm(false);
-    alert('Bank details saved successfully!');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/bank-details', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(bankDetails)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowBankForm(false);
+        alert('Bank details saved to database successfully!');
+        if (typeof updateUser === 'function') {
+          updateUser({ bankDetails });
+        }
+      } else {
+        alert(data.message || 'Error saving bank details');
+      }
+    } catch (err) {
+      alert('Server error saving bank details');
+    }
   };
 
   const totalRevenue = cakes.reduce((sum, cake) => sum + (cake.price || 0), 0);
@@ -203,6 +257,28 @@ const SellerDashboard = () => {
   return (
     <div className="seller_dashboard">
       <div className="dashboard_container">
+        {/* Verification Warning */}
+        {!user?.emailVerified && (
+          <div className="verification_banner" style={{
+            backgroundColor: '#fffaf0',
+            border: '1px solid #fbd38d',
+            padding: '15px',
+            borderRadius: '8px',
+            marginBottom: '30px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: '#c05621'
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>Your email address is not verified. Please verify it from the <strong>Profile</strong> tab to enable all features.</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="dashboard_header">
           <div className="header_content">
@@ -241,6 +317,12 @@ const SellerDashboard = () => {
             onClick={() => setActiveTab('payments')}
           >
             Payments
+          </button>
+          <button 
+            className={`tab_btn ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
           </button>
         </div>
 
@@ -430,15 +512,23 @@ const SellerDashboard = () => {
                       </select>
                     </div>
                     <div className="form_group">
-                      <label>Image URL *</label>
+                      <label>Cake Image *</label>
                       <input
-                        type="url"
-                        name="image"
-                        value={newCake.image}
-                        onChange={handleInputChange}
-                        placeholder="https://example.com/image.jpg"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="file_input"
                         required
                       />
+                      {imagePreview && (
+                        <div className="image_preview_container" style={{ marginTop: '10px' }}>
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            style={{ maxWidth: '100px', borderRadius: '8px', border: '1px solid #ddd' }} 
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -660,6 +750,12 @@ const SellerDashboard = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div className="profile_section">
+            <ProfileSettings />
           </div>
         )}
       </div>

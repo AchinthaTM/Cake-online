@@ -139,4 +139,22 @@ router.get('/seller', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/orders/my-orders
+// @desc    Get current user's order history
+// @access  Private (Buyer)
+router.get('/my-orders', auth, async (req, res) => {
+  try {
+    const orders = await Order.find({ customer: req.user._id })
+      .populate('seller', 'firstName lastName sellerInfo')
+      .populate('items.product', 'name price images')
+      .sort({ createdAt: -1 });
+    
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    console.error('Error fetching my orders:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;
+

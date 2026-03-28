@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -31,6 +33,11 @@ const corsOptions = {
   optionSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+const server = http.createServer(app);
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -79,7 +86,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
 });

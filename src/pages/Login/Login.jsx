@@ -10,9 +10,13 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, verifyOTP, resendOTP } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -33,6 +37,32 @@ const Login = () => {
     setLoading(true);
 
     const result = await login(formData.email, formData.password);
+    setLoading(false);
+
+    if (result.success) {
+      if (result.verificationRequired) {
+        setVerificationRequired(true);
+        return;
+      }
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    const result = await verifyOTP(formData.email, otp);
+    setLoading(false);
 
     if (result.success) {
       const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -40,7 +70,20 @@ const Login = () => {
     } else {
       setError(result.message);
     }
-    setLoading(false);
+  };
+
+  const handleResendOTP = async () => {
+    setError('');
+    setSuccessMessage('');
+    setResendLoading(true);
+    const result = await resendOTP(formData.email);
+    setResendLoading(false);
+
+    if (result.success) {
+      setSuccessMessage('A new code has been sent to your email.');
+    } else {
+      setError(result.message);
+    }
   };
 
   return (
@@ -80,42 +123,85 @@ const Login = () => {
           </div>
 
           {error && <div className="error_message">{error}</div>}
+          {successMessage && <div className="success_message" style={{ color: '#4CAF50', marginBottom: '15px', textAlign: 'center' }}>{successMessage}</div>}
 
-          <form className="auth_form" onSubmit={handleSubmit}>
-            <div className="form_group">
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-              />
-            </div>
+          {!verificationRequired ? (
+            <form className="auth_form" onSubmit={handleSubmit}>
+              <div className="form_group">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                />
+              </div>
 
-            <div className="form_group">
-              <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-              />
-            </div>
+              <div className="form_group">
+                <label>Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <div className="form_options">
-              <label className="remember_me">
-                <input type="checkbox" />
-                <span>Remember me</span>
-              </label>
-              <a href="#forgot">Forgot password?</a>
-            </div>
+              <div className="form_options">
+                <label className="remember_me">
+                  <input type="checkbox" />
+                  <span>Remember me</span>
+                </label>
+                <a href="#forgot">Forgot password?</a>
+              </div>
 
-            <button type="submit" className="auth_submit_btn" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
+              <button type="submit" className="auth_submit_btn" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          ) : (
+            <form className="auth_form" onSubmit={handleVerifyOTP}>
+              <div className="auth_header" style={{ marginBottom: '20px' }}>
+                <p>We've sent a 6-digit verification code to <br /><strong>{formData.email}</strong></p>
+              </div>
+              <div className="form_group">
+                <label>Verification Code</label>
+                <input
+                  type="text"
+                  maxLength="6"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Enter 6-digit code"
+                  style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px' }}
+                />
+              </div>
+
+              <button type="submit" className="auth_submit_btn" disabled={loading}>
+                {loading ? 'Verifying...' : 'Verify & Sign In'}
+              </button>
+
+              <div className="form_options" style={{ justifyContent: 'center', marginTop: '15px' }}>
+                <button 
+                  type="button" 
+                  className="resend_btn" 
+                  onClick={handleResendOTP} 
+                  disabled={resendLoading}
+                  style={{ background: 'none', border: 'none', color: '#ff69b4', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
+                >
+                  {resendLoading ? 'Sending...' : "Didn't receive the code? Resend"}
+                </button>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setVerificationRequired(false)}
+                style={{ background: 'none', border: 'none', color: '#777', cursor: 'pointer', fontSize: '14px', display: 'block', margin: '15px auto 0' }}
+              >
+                Back to Login
+              </button>
+            </form>
+          )}
 
           <div className="auth_footer">
             <p>

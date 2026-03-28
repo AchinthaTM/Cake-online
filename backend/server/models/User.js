@@ -28,9 +28,15 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function() {
+      return !this.isGoogleUser;
+    },
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false // Don't include password in queries by default
+    select: false
+  },
+  isGoogleUser: {
+    type: Boolean,
+    default: false
   },
   role: {
     type: String,
@@ -58,6 +64,19 @@ const userSchema = new mongoose.Schema({
   emailVerified: {
     type: Boolean,
     default: false
+  },
+  otpCode: {
+    type: String,
+    select: false
+  },
+  otpExpiry: {
+    type: Date,
+    select: false
+  },
+  otpType: {
+    type: String,
+    enum: ['login', 'email_verification', 'password_reset'],
+    default: 'login'
   },
   profileImage: {
     type: String,
