@@ -127,7 +127,25 @@ router.post('/login', [
       });
     }
 
-    // Generate OTP for login verification
+    // DEBUG: Checking user role for OTP bypass
+    console.log(`Login attempt for ${user.email} with role: ${user.role}`);
+
+    // Bypassing OTP for Admin role
+    if (user.role === 'admin' || user.email === 'admin@test.com') {
+      console.log('Bypassing OTP for admin');
+      const token = generateToken(user._id);
+      return res.json({
+        success: true,
+        message: 'Admin login successful',
+        verificationRequired: false,
+        data: {
+          user,
+          token
+        }
+      });
+    }
+
+    // Generate OTP for login verification for everyone else
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
@@ -278,6 +296,129 @@ router.post('/resend-otp', [
     res.status(500).json({
       success: false,
       message: 'Server error while resending code'
+    });
+  }
+});
+ 
+// @route   POST /api/auth/forgot-password
+// @desc    Forgot password
+// @access  Public
+router.post('/forgot-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email')
+], async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No user found with that email'
+      });
+    }
+
+    // Create reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Hash and set to resetPasswordToken field
+    user.resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Set expire
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+
+    await user.save();
+
+    // Create reset url
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    const message = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #ff69b4;">Password Reset Request</h2>
+        <p>Hello ${user.firstName},</p>
+        <p>You are receiving this email because you (or someone else) has requested the reset of a password.</p>
+        <p>Please click on the link below to reset your password:</p>
+        <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #ff69b4; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Reset Password</a>
+        <p>This link will expire in 30 minutes.</p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+        <hr style="border: 0; border-top: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #777;">Sweet Delights Marketplace Team</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Password Reset - Sweet Delights',
+        html: message,
+        text: `You requested a password reset. Please go to: ${resetUrl}`
+      });
+
+      res.json({
+        success: true,
+        message: 'Email sent successfully'
+      });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      return res.status(500).json({
+        success: false,
+        message: 'Email could not be sent'
+      });
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/auth/reset-password/:token
+// @desc    Reset password
+// @access  Public
+router.post('/reset-password/:token', [
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+  try {
+    // Get hashed token
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+
+    // Set new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successful'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });
@@ -480,6 +621,69 @@ router.put('/bank-details', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Update bank details error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   GET /api/auth/users
+// @desc    Get all users
+// @access  Private (Admin only)
+const { authorize } = require('../middleware/auth');
+router.get('/users', auth, authorize('admin'), async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   PATCH /api/auth/users/:id/status
+// @desc    Toggle user status
+// @access  Private (Admin only)
+router.patch('/users/:id/status', auth, authorize('admin'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error toggling user status:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   GET /api/auth/analytics/users
+// @desc    Get user growth analytics
+// @access  Private (Admin only)
+router.get('/analytics/users', auth, authorize('admin'), async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id": 1 } },
+      { $limit: 30 } // Last 30 days
+    ]);
+
+    // Map to recharts format
+    const data = users.map(u => ({
+      date: u._id,
+      users: u.count
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching user analytics:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

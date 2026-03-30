@@ -45,7 +45,9 @@ const Login = () => {
         return;
       }
       const user = JSON.parse(localStorage.getItem('currentUser'));
-      navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
+      if (user.role === 'admin') navigate('/admin/dashboard');
+      else if (user.role === 'seller') navigate('/seller/dashboard');
+      else navigate('/');
     } else {
       setError(result.message);
     }
@@ -66,7 +68,9 @@ const Login = () => {
 
     if (result.success) {
       const user = JSON.parse(localStorage.getItem('currentUser'));
-      navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
+      if (user.role === 'admin') navigate('/admin/dashboard');
+      else if (user.role === 'seller') navigate('/seller/dashboard');
+      else navigate('/');
     } else {
       setError(result.message);
     }
@@ -106,7 +110,9 @@ const Login = () => {
                 setLoading(false);
                 if (result.success) {
                   const user = JSON.parse(localStorage.getItem('currentUser'));
-                  navigate(user.role === 'seller' ? '/seller/dashboard' : '/');
+                  if (user.role === 'admin') navigate('/admin/dashboard');
+                  else if (user.role === 'seller') navigate('/seller/dashboard');
+                  else navigate('/');
                 } else {
                   setError(result.message);
                 }
@@ -154,7 +160,7 @@ const Login = () => {
                   <input type="checkbox" />
                   <span>Remember me</span>
                 </label>
-                <a href="#forgot">Forgot password?</a>
+                <Link to="/forgot-password">Forgot password?</Link>
               </div>
 
               <button type="submit" className="auth_submit_btn" disabled={loading}>
@@ -207,13 +213,6 @@ const Login = () => {
             <p>
               Don't have an account? <Link to="/register">Register here</Link>
             </p>
-          </div>
-
-          {/* Demo Credentials */}
-          <div className="demo_credentials">
-            <h4>Demo Credentials:</h4>
-            <p><strong>Buyer:</strong> buyer@test.com / password123</p>
-            <p><strong>Seller:</strong> seller@test.com / password123</p>
           </div>
         </div>
 

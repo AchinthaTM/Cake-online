@@ -156,5 +156,78 @@ router.get('/my-orders', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/orders/admin
+// @desc    Get all orders (Admin only)
+// @access  Private (Admin only)
+const { authorize } = require('../middleware/auth');
+router.get('/admin', auth, authorize('admin'), async (req, res) => {
+  try {
+    const orders = await Order.find({})
+      .populate('customer', 'firstName lastName email')
+      .populate('seller', 'firstName lastName')
+      .populate('items.product', 'name price')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/orders/admin/:id
+// @desc    Hard delete an order (Admin only)
+// @access  Private (Admin only)
+router.delete('/admin/:id', auth, authorize('admin'), async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    await order.deleteOne();
+    res.json({ success: true, message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting order as admin:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   GET /api/orders/analytics/revenue
+// @desc    Get revenue analytics
+// @access  Private (Admin only)
+router.get('/analytics/revenue', auth, authorize('admin'), async (req, res) => {
+  try {
+    const revenue = await Order.aggregate([
+      { $match: { status: 'confirmed' } },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.product',
+          foreignField: '_id',
+          as: 'productDetails'
+        }
+      },
+      { $unwind: '$productDetails' },
+      {
+        $group: {
+          _id: '$productDetails.category',
+          total: { $sum: '$total' }
+        }
+      }
+    ]);
+
+    // Map to recharts format
+    const data = revenue.map(r => ({
+      name: r._id,
+      value: r.total
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching revenue analytics:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;
 

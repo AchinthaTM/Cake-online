@@ -156,4 +156,38 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/products/admin
+// @desc    Get all products (Admin only)
+// @access  Private (Admin only)
+const { authorize } = require('../middleware/auth');
+router.get('/admin', auth, authorize('admin'), async (req, res) => {
+  try {
+    const products = await Product.find({})
+      .populate('seller', 'firstName lastName')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: products });
+  } catch (error) {
+    console.error('Error fetching admin products:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/products/admin/:id
+// @desc    Hard delete a product (Admin only)
+// @access  Private (Admin only)
+router.delete('/admin/:id', auth, authorize('admin'), async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    await product.deleteOne();
+    res.json({ success: true, message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product as admin:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

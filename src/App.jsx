@@ -13,6 +13,8 @@ import SellerDashboard from './pages/SellerDashboard/SellerDashboard.jsx'
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx'
 import BuyerDashboard from './pages/BuyerDashboard/BuyerDashboard.jsx'
 import Checkout from './pages/Checkout/Checkout.jsx'
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword/ResetPassword.jsx'
 import TopBar from './components/TopBar/TopBar.jsx'
 import Navigation from './components/Navigation/Navigation.jsx'
 import Footer from './components/Footer/Footer.jsx'
@@ -70,6 +72,16 @@ function App() {
         <Route path="/login" element={
           <main>
             <Login />
+          </main>
+        } />
+        <Route path="/forgot-password" element={
+          <main>
+            <ForgotPassword />
+          </main>
+        } />
+        <Route path="/reset-password/:token" element={
+          <main>
+            <ResetPassword />
           </main>
         } />
         <Route path="/seller/dashboard" element={

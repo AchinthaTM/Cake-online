@@ -175,6 +175,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      return { success: response.ok, message: data.message };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
+    }
+  };
+
+  const resetPassword = async (token, password) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/reset-password/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await response.json();
+      return { success: response.ok, message: data.message };
+    } catch (error) {
+      return { success: false, message: 'Server error. Please try again later.' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -188,6 +216,8 @@ export const AuthProvider = ({ children }) => {
         verifyOTP,
         resendOTP,
         verifyEmailChange,
+        forgotPassword,
+        resetPassword,
       }}
     >
       {children}
