@@ -20,12 +20,7 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: [
-      // Cake categories
-      'Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Butter', 'Fruit', 'Other',
-      // Bouquet categories
-      'Rose', 'Lily', 'Sunflower', 'Orchid', 'Mixed', 'Tulip', 'Carnation'
-    ],
+    enum: ['Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Butter', 'Fruit', 'Bouquet', 'Other'],
     default: 'Chocolate'
   },
   type: {

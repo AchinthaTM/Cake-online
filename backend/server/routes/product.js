@@ -9,15 +9,13 @@ const upload = require('../middleware/upload');
 // @access  Private (Seller only)
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, type } = req.body;
     
     let imageUrl = '';
     
     if (req.file) {
-      // Store path relative to the root (since server.js serves /uploads statically)
       imageUrl = `/uploads/products/${req.file.filename}`;
     } else if (req.body.image) {
-      // Fallback for URL if provided (though we are moving to file upload)
       imageUrl = req.body.image;
     }
 
@@ -32,6 +30,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       description,
       price: parseFloat(price),
       category,
+      type: type || 'cake',
       images,
       seller: req.user._id,
       stock: 10
