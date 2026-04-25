@@ -39,12 +39,16 @@ const server = http.createServer(app);
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve built frontend (production)
+const distPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Basic route
-app.get('/', (req, res) => {
+// Health check / API root
+app.get('/api', (req, res) => {
   res.json({
     message: 'Sweet Delights API',
     version: '1.0.0',
@@ -66,12 +70,14 @@ app.use('/api/auth', require('./server/routes/auth'));
 app.use('/api/products', require('./server/routes/product'));
 app.use('/api/orders', require('./server/routes/order'));
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
+// SPA catch-all — serve index.html for any non-API route (React Router)
+app.get(/.*/, (req, res) => {
+  const indexPath = path.join(distPath, 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ success: false, message: 'Frontend not built. Run npm run build in the root folder.' });
+  }
 });
 
 // Global error handler

@@ -70,8 +70,7 @@ const Navigation = () => {
         </Link>
         <Link to="/bouquets" className="nav_link">Bouquets</Link>
         <Link to="/gallery" className="nav_link">Gallery</Link>
-        <a href="#about" className="nav_link">About Us</a>
-        <a href="#contact" className="nav_link">Contact</a>
+
       </div>
 
       <div className="nav_right">
