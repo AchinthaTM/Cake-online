@@ -9,7 +9,7 @@ const upload = require('../middleware/upload');
 // @access  Private (Seller only)
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
-    const { name, description, price, category, type } = req.body;
+    const { name, description, price, category, type, weight } = req.body;
     
     let imageUrl = '';
     
@@ -31,6 +31,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       price: parseFloat(price),
       category,
       type: type || 'cake',
+      weight: weight ? parseFloat(weight) : undefined,
       images,
       seller: req.user._id,
       stock: 10
@@ -94,7 +95,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
-    const { name, description, price, category, stock, isActive } = req.body;
+    const { name, description, price, category, stock, isActive, weight } = req.body;
     const updates = {
       name: name || product.name,
       description: description || product.description,
@@ -103,6 +104,10 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       stock: stock !== undefined ? parseInt(stock) : product.stock,
       isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : product.isActive
     };
+
+    if (weight !== undefined) {
+      updates.weight = weight ? parseFloat(weight) : undefined;
+    }
 
     if (req.file) {
       updates.images = [{ url: `/uploads/products/${req.file.filename}` }];

@@ -15,7 +15,7 @@ const SellerDashboard = () => {
   const [showAddBouquetForm, setShowAddBouquetForm] = useState(false);
   const [bankDetails, setBankDetails] = useState({ bankName: '', accountNumber: '', accountHolderName: '', branch: '', swiftCode: '' });
   const [showBankForm, setShowBankForm] = useState(false);
-  const [newCake, setNewCake] = useState({ name: '', description: '', price: '', category: 'Chocolate', image: '' });
+  const [newCake, setNewCake] = useState({ name: '', description: '', price: '', weight: '', category: 'Chocolate', image: '' });
   const [newBouquet, setNewBouquet] = useState({ name: '', description: '', price: '', category: 'Rose' });
   const [bouquetFile, setBouquetFile] = useState(null);
   const [bouquetPreview, setBouquetPreview] = useState(null);
@@ -37,6 +37,7 @@ const SellerDashboard = () => {
           setCakes(data.data.map(p => ({
             id: p._id, name: p.name, description: p.description, price: p.price,
             category: p.category, type: p.type || 'cake', stock: p.stock || 0,
+            weight: p.weight || '',
             isActive: p.isActive !== undefined ? p.isActive : true,
             image: p.images && p.images.length > 0
               ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`)
@@ -94,16 +95,17 @@ const SellerDashboard = () => {
       formData.append('description', newCake.description);
       formData.append('price', newCake.price);
       formData.append('category', newCake.category);
+      if (newCake.weight) formData.append('weight', newCake.weight);
       formData.append('type', 'cake');
       formData.append('image', selectedFile);
       const response = await fetch('http://localhost:5000/api/products', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
       const data = await response.json();
       if (data.success) {
         const p = data.data;
-        setCakes([{ id: p._id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'cake',
+        setCakes([{ id: p._id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'cake', weight: p.weight || '',
           image: p.images && p.images.length > 0 ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) : '',
           createdAt: p.createdAt, isActive: true, stock: p.stock || 10 }, ...cakes]);
-        setNewCake({ name: '', description: '', price: '', category: 'Chocolate', image: '' });
+        setNewCake({ name: '', description: '', price: '', weight: '', category: 'Chocolate', image: '' });
         setSelectedFile(null); setImagePreview(null); setShowAddForm(false);
         alert('Cake added successfully!');
       } else { alert(data.message || 'Error adding cake'); }
@@ -149,13 +151,14 @@ const SellerDashboard = () => {
       formData.append('category', editingCake.category);
       formData.append('stock', editingCake.stock);
       formData.append('isActive', editingCake.isActive);
+      if (editingCake.weight) formData.append('weight', editingCake.weight);
       if (selectedFile) formData.append('image', selectedFile);
       const response = await fetch(`http://localhost:5000/api/products/${editingCake.id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
       const data = await response.json();
       if (data.success) {
         const p = data.data;
         const updated = { id: p._id, name: p.name, description: p.description, price: p.price, category: p.category,
-          type: p.type || editingCake.type, stock: p.stock, isActive: p.isActive,
+          weight: p.weight || '', type: p.type || editingCake.type, stock: p.stock, isActive: p.isActive,
           image: p.images && p.images.length > 0 ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) : '', createdAt: p.createdAt };
         setCakes(cakes.map(c => c.id === updated.id ? updated : c));
         setShowEditForm(false); setEditingCake(null); setSelectedFile(null); setImagePreview(null);
@@ -388,6 +391,10 @@ const SellerDashboard = () => {
                         <label>Price (Rs) *</label>
                         <input type="number" name="price" value={newCake.price} onChange={handleInputChange} placeholder="0.00" step="0.01" required />
                       </div>
+                      <div className="form_group">
+                        <label>Weight (g)</label>
+                        <input type="number" name="weight" value={newCake.weight} onChange={handleInputChange} placeholder="e.g. 500" min="0" />
+                      </div>
                     </div>
                     <div className="form_group">
                       <label>Description</label>
@@ -423,6 +430,10 @@ const SellerDashboard = () => {
                       <div className="form_group">
                         <label>Price *</label>
                         <input type="number" name="price" value={editingCake.price} onChange={handleUpdateInputChange} step="0.01" required />
+                      </div>
+                      <div className="form_group">
+                        <label>Weight (g)</label>
+                        <input type="number" name="weight" value={editingCake.weight || ''} onChange={handleUpdateInputChange} min="0" />
                       </div>
                     </div>
                     <div className="form_group">
