@@ -29,10 +29,27 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'https://sweetdelight.lk',
+  'https://www.sweetdelight.lk'
+];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || ['http://localhost:5173'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  optionSuccessStatus: 200
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
