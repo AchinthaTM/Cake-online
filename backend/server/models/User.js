@@ -1,135 +1,124 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-    maxlength: [50, 'First name cannot exceed 50 characters']
+    type: DataTypes.STRING(50),
+    allowNull: false
   },
   lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true,
-    maxlength: [50, 'Last name cannot exceed 50 characters']
+    type: DataTypes.STRING(50),
+    allowNull: false
   },
   email: {
-    type: String,
-    required: [true, 'Email is required'],
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    lowercase: true,
     validate: {
-      validator: function(email) {
-        return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
-      },
-      message: 'Please enter a valid email'
+      isEmail: true
     }
   },
   password: {
-    type: String,
-    required: function() {
+    type: DataTypes.STRING,
+    allowNull: function() {
       return !this.isGoogleUser;
-    },
-    minlength: [6, 'Password must be at least 6 characters'],
-    select: false
+    }
   },
   isGoogleUser: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   role: {
-    type: String,
-    enum: ['buyer', 'seller', 'admin'],
-    default: 'buyer'
+    type: DataTypes.ENUM('buyer', 'seller', 'admin'),
+    defaultValue: 'buyer'
   },
   phone: {
-    type: String,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: true
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: {
-      type: String,
-      default: 'Sri Lanka'
+    type: DataTypes.TEXT,
+    get() {
+      const value = this.getDataValue('address');
+      return value ? JSON.parse(value) : null;
+    },
+    set(value) {
+      this.setDataValue('address', JSON.stringify(value));
     }
   },
   isActive: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   emailVerified: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   otpCode: {
-    type: String,
-    select: false
+    type: DataTypes.STRING,
+    allowNull: true
   },
   otpExpiry: {
-    type: Date,
-    select: false
+    type: DataTypes.DATE,
+    allowNull: true
   },
   otpType: {
-    type: String,
-    enum: ['login', 'email_verification', 'password_reset'],
-    default: 'login'
+    type: DataTypes.ENUM('login', 'email_verification', 'password_reset'),
+    defaultValue: 'login'
   },
   profileImage: {
-    type: String,
-    default: ''
+    type: DataTypes.STRING,
+    defaultValue: ''
   },
   bankDetails: {
-    bankName: String,
-    accountNumber: String,
-    accountHolderName: String,
-    branch: String,
-    swiftCode: String
-  },
-  sellerInfo: {
-    businessName: String,
-    description: String,
-    rating: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5
+    type: DataTypes.TEXT,
+    get() {
+      const value = this.getDataValue('bankDetails');
+      return value ? JSON.parse(value) : null;
     },
-    totalSales: {
-      type: Number,
-      default: 0
+    set(value) {
+      this.setDataValue('bankDetails', JSON.stringify(value));
     }
   },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date
+  sellerInfo: {
+    type: DataTypes.TEXT,
+    get() {
+      const value = this.getDataValue('sellerInfo');
+      return value ? JSON.parse(value) : null;
+    },
+    set(value) {
+      this.setDataValue('sellerInfo', JSON.stringify(value));
+    }
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  resetPasswordExpire: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
 }, {
-  timestamps: true
-});
-
-// Index for better query performance
-userSchema.index({ role: 1 });
-
-// Hash password before saving
-userSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
-
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  timestamps: true,
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        const salt = await bcrypt.genSalt(12);
+        user.password = await bcrypt.hash(user.password, salt);
+      }
+    }
+  }
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+User.prototype.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON output
-userSchema.methods.toJSON = function() {
-  const userObject = this.toObject();
-  delete userObject.password;
-  return userObject;
-};
-
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

@@ -5,13 +5,19 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
-const connectDB = require('./server/config/database');
+const { sequelize, connectDB: connectMySQL } = require('./server/config/db');
 
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MySQL
+connectMySQL();
+
+// Initialize models and associations
+require('./server/models');
+
+// Sync models (uncomment in development if needed)
+sequelize.sync({ alter: true }).then(() => console.log('Models synced with MySQL'));
 
 const app = express();
 

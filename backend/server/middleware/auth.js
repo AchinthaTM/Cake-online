@@ -20,9 +20,11 @@ const auth = async (req, res, next) => {
     try {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Decoded Token:', decoded);
 
       // Get user from token
-      const user = await User.findById(decoded.id);
+      const user = await User.findByPk(decoded.id);
+      console.log('User found by PK:', user ? user.id : 'null');
 
       if (!user) {
         return res.status(401).json({

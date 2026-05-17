@@ -31,9 +31,9 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       price: parseFloat(price),
       category,
       type: type || 'cake',
-      weight: weight ? parseFloat(weight) : undefined,
+      weight: weight ? parseFloat(weight) : null,
       images,
-      seller: req.user._id,
+      sellerId: req.user.id,
       stock: 10
     });
 
@@ -49,7 +49,10 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
 // @access  Private
 router.get('/seller', auth, async (req, res) => {
   try {
-    const products = await Product.find({ seller: req.user._id }).sort({ createdAt: -1 });
+    const products = await Product.findAll({ 
+      where: { sellerId: req.user.id },
+      order: [['createdAt', 'DESC']] 
+    });
     res.json({ success: true, data: products });
   } catch (error) {
     console.error('Error fetching seller products:', error);
@@ -62,17 +65,17 @@ router.get('/seller', auth, async (req, res) => {
 // @access  Private
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findByPk(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
     
     // Make sure user owns product
-    if (product.seller.toString() !== req.user._id.toString()) {
+    if (product.sellerId !== req.user.id) {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
-    await product.deleteOne();
+    await product.destroy();
     res.json({ success: true, message: 'Product removed' });
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -85,13 +88,13 @@ router.delete('/:id', auth, async (req, res) => {
 // @access  Private (Seller only)
 router.put('/:id', auth, upload.single('image'), async (req, res) => {
   try {
-    let product = await Product.findById(req.params.id);
+    let product = await Product.findByPk(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
-
+    
     // Check ownership
-    if (product.seller.toString() !== req.user._id.toString()) {
+    if (product.sellerId !== req.user.id) {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
@@ -113,10 +116,7 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       updates.images = [{ url: `/uploads/products/${req.file.filename}` }];
     }
 
-    product = await Product.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true
-    });
+    await product.update(updates);
 
     res.json({ success: true, data: product });
   } catch (error) {
@@ -136,7 +136,10 @@ router.get('/', async (req, res) => {
       filter.type = type;
     }
     
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    const products = await Product.findAll({ 
+      where: filter,
+      order: [['createdAt', 'DESC']] 
+    });
     res.json({ success: true, data: products });
   } catch (error) {
     console.error('Error fetching public products:', error);
@@ -149,7 +152,14 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('seller', 'firstName lastName sellerInfo');
+    const { User } = require('../models');
+    const product = await Product.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'seller',
+        attributes: ['firstName', 'lastName', 'sellerInfo']
+      }]
+    });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -166,9 +176,15 @@ router.get('/:id', async (req, res) => {
 const { authorize } = require('../middleware/auth');
 router.get('/admin', auth, authorize('admin'), async (req, res) => {
   try {
-    const products = await Product.find({})
-      .populate('seller', 'firstName lastName')
-      .sort({ createdAt: -1 });
+    const { User } = require('../models');
+    const products = await Product.findAll({
+      include: [{
+        model: User,
+        as: 'seller',
+        attributes: ['firstName', 'lastName']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
     res.json({ success: true, data: products });
   } catch (error) {
     console.error('Error fetching admin products:', error);
@@ -181,12 +197,12 @@ router.get('/admin', auth, authorize('admin'), async (req, res) => {
 // @access  Private (Admin only)
 router.delete('/admin/:id', auth, authorize('admin'), async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findByPk(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    await product.deleteOne();
+    await product.destroy();
     res.json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product as admin:', error);

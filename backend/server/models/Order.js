@@ -1,148 +1,105 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const orderSchema = new mongoose.Schema({
+const Order = sequelize.define('Order', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   orderNumber: {
-    type: String,
+    type: DataTypes.STRING,
     unique: true,
-    required: true
+    allowNull: false
   },
-  customer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Customer is required']
+  customerId: {
+    type: DataTypes.UUID,
+    allowNull: false
   },
-  items: [{
-    product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-      required: true
+  sellerId: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+  items: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      const value = this.getDataValue('items');
+      return value ? JSON.parse(value) : [];
     },
-    quantity: {
-      type: Number,
-      required: true,
-      min: [1, 'Quantity must be at least 1']
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: [0, 'Price cannot be negative']
-    },
-    customization: {
-      type: Map,
-      of: String,
-      default: {}
+    set(value) {
+      this.setDataValue('items', JSON.stringify(value));
     }
-  }],
+  },
   subtotal: {
-    type: Number,
-    required: true,
-    min: [0, 'Subtotal cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
   },
   tax: {
-    type: Number,
-    default: 0,
-    min: [0, 'Tax cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0
   },
   deliveryFee: {
-    type: Number,
-    default: 0,
-    min: [0, 'Delivery fee cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0
   },
   discount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Discount cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0
   },
   total: {
-    type: Number,
-    required: true,
-    min: [0, 'Total cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
   },
   status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'],
-    default: 'pending'
+    type: DataTypes.ENUM('pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'),
+    defaultValue: 'pending'
   },
   payment: {
-    method: {
-      type: String,
-      enum: ['card', 'bank_transfer', 'cash_on_delivery'],
-      required: true
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      const value = this.getDataValue('payment');
+      return value ? JSON.parse(value) : {};
     },
-    status: {
-      type: String,
-      enum: ['pending', 'processing', 'completed', 'failed', 'refunded'],
-      default: 'pending'
-    },
-    transactionId: String,
-    paidAt: Date
+    set(value) {
+      this.setDataValue('payment', JSON.stringify(value));
+    }
   },
   delivery: {
-    address: {
-      street: {
-        type: String,
-        required: [true, 'Street address is required']
-      },
-      city: {
-        type: String,
-        required: [true, 'City is required']
-      },
-      state: String,
-      zipCode: String,
-      country: {
-        type: String,
-        default: 'Sri Lanka'
-      }
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      const value = this.getDataValue('delivery');
+      return value ? JSON.parse(value) : {};
     },
-    instructions: String,
-    scheduledDate: {
-      type: Date,
-      required: [true, 'Delivery date is required']
-    },
-    timeSlot: {
-      type: String,
-      enum: ['morning', 'afternoon', 'evening'],
-      default: 'afternoon'
-    },
-    deliveredAt: Date,
-    trackingNumber: String
+    set(value) {
+      this.setDataValue('delivery', JSON.stringify(value));
+    }
   },
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Seller is required']
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  notes: String,
-  cancellationReason: String,
+  cancellationReason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   refundAmount: {
-    type: Number,
-    default: 0
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0
   }
 }, {
-  timestamps: true
-});
-
-// Indexes for better query performance
-orderSchema.index({ customer: 1, createdAt: -1 });
-orderSchema.index({ seller: 1, status: 1 });
-orderSchema.index({ 'delivery.scheduledDate': 1 });
-
-// Pre-validate middleware to generate order number
-orderSchema.pre('validate', function() {
-  if (this.isNew && !this.orderNumber) {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-    this.orderNumber = `SD${timestamp}${random}`;
+  timestamps: true,
+  hooks: {
+    beforeValidate: (order) => {
+      if (!order.orderNumber) {
+        const timestamp = Date.now().toString().slice(-6);
+        const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+        order.orderNumber = `SD${timestamp}${random}`;
+      }
+    }
   }
 });
 
-// Virtual for order age
-orderSchema.virtual('orderAge').get(function() {
-  return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60)); // hours
-});
-
-// Ensure virtual fields are serialized
-orderSchema.set('toJSON', { virtuals: true });
-orderSchema.set('toObject', { virtuals: true });
-
-module.exports = mongoose.model('Order', orderSchema);
+module.exports = Order;

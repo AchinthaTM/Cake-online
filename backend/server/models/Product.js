@@ -1,151 +1,128 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const productSchema = new mongoose.Schema({
+const Product = sequelize.define('Product', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   name: {
-    type: String,
-    required: [true, 'Product name is required'],
-    trim: true,
-    maxlength: [100, 'Product name cannot exceed 100 characters']
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   description: {
-    type: String,
-    required: [true, 'Product description is required'],
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   price: {
-    type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative']
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
   },
   category: {
-    type: String,
-    required: [true, 'Category is required'],
-    enum: [
-      // Cake categories
-      'Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Butter', 'Fruit', 'Other',
-      // Bouquet categories
-      'Rose', 'Lily', 'Sunflower', 'Orchid', 'Mixed', 'Tulip', 'Carnation'
-    ],
-    default: 'Chocolate'
+    type: DataTypes.STRING,
+    allowNull: false
   },
   type: {
-    type: String,
-    enum: ['cake', 'bouquet'],
-    default: 'cake'
+    type: DataTypes.ENUM('cake', 'bouquet'),
+    defaultValue: 'cake'
   },
-  images: [{
-    url: {
-      type: String,
-      required: true
+  images: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const value = this.getDataValue('images');
+      return value ? JSON.parse(value) : [];
     },
-    alt: {
-      type: String,
-      default: ''
+    set(value) {
+      this.setDataValue('images', JSON.stringify(value));
     }
-  }],
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Seller is required']
   },
   stock: {
-    type: Number,
-    default: 0,
-    min: [0, 'Stock cannot be negative']
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   isActive: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   isFeatured: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
-  tags: [{
-    type: String,
-    trim: true
-  }],
+  tags: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const value = this.getDataValue('tags');
+      return value ? JSON.parse(value) : [];
+    },
+    set(value) {
+      this.setDataValue('tags', JSON.stringify(value));
+    }
+  },
   weight: {
-    type: Number, // in grams
-    min: [0, 'Weight cannot be negative']
+    type: DataTypes.INTEGER, // in grams
+    allowNull: true
   },
   servings: {
-    type: Number,
-    min: [1, 'Must serve at least 1 person']
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
-  allergens: [{
-    type: String,
-    enum: ['nuts', 'dairy', 'eggs', 'gluten', 'soy', 'other']
-  }],
+  allergens: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const value = this.getDataValue('allergens');
+      return value ? JSON.parse(value) : [];
+    },
+    set(value) {
+      this.setDataValue('allergens', JSON.stringify(value));
+    }
+  },
   preparationTime: {
-    type: Number, // in hours
-    min: [0, 'Preparation time cannot be negative']
+    type: DataTypes.INTEGER, // in hours
+    allowNull: true
   },
   customization: {
-    available: {
-      type: Boolean,
-      default: false
+    type: DataTypes.TEXT,
+    allowNull: true,
+    get() {
+      const value = this.getDataValue('customization');
+      return value ? JSON.parse(value) : null;
     },
-    options: [{
-      name: String,
-      type: {
-        type: String,
-        enum: ['text', 'select', 'color']
-      },
-      required: Boolean,
-      choices: [String] // for select type
-    }]
+    set(value) {
+      this.setDataValue('customization', JSON.stringify(value));
+    }
   },
   ratings: {
-    average: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5
+    type: DataTypes.TEXT,
+    defaultValue: JSON.stringify({ average: 0, count: 0 }),
+    get() {
+      const value = this.getDataValue('ratings');
+      return value ? JSON.parse(value) : { average: 0, count: 0 };
     },
-    count: {
-      type: Number,
-      default: 0
+    set(value) {
+      this.setDataValue('ratings', JSON.stringify(value));
     }
   },
-  reviews: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+  reviews: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const value = this.getDataValue('reviews');
+      return value ? JSON.parse(value) : [];
     },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    comment: {
-      type: String,
-      maxlength: 500
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
+    set(value) {
+      this.setDataValue('reviews', JSON.stringify(value));
     }
-  }]
+  },
+  sellerId: {
+    type: DataTypes.UUID,
+    allowNull: false
+  }
 }, {
   timestamps: true
 });
 
-// Indexes for better query performance
-productSchema.index({ category: 1, type: 1 });
-productSchema.index({ seller: 1 });
-productSchema.index({ isActive: 1, isFeatured: 1 });
-productSchema.index({ name: 'text', description: 'text' }); // Text search
-
-// Virtual for stock status
-productSchema.virtual('stockStatus').get(function() {
-  if (this.stock === 0) return 'out_of_stock';
-  if (this.stock < 5) return 'low_stock';
-  return 'in_stock';
-});
-
-// Ensure virtual fields are serialized
-productSchema.set('toJSON', { virtuals: true });
-productSchema.set('toObject', { virtuals: true });
-
-module.exports = mongoose.model('Product', productSchema);
+module.exports = Product;

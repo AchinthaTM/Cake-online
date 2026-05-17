@@ -44,7 +44,7 @@ router.post('/register', [
     const { firstName, lastName, email, password, role = 'buyer' } = req.body;
 
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -62,7 +62,7 @@ router.post('/register', [
     });
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(201).json({
       success: true,
@@ -102,7 +102,7 @@ router.post('/login', [
     const { email, password } = req.body;
 
     // Check if user exists and get password
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -133,7 +133,7 @@ router.post('/login', [
     // Bypassing OTP for Admin role
     if (user.role === 'admin' || user.email === 'admin@test.com') {
       console.log('Bypassing OTP for admin');
-      const token = generateToken(user._id);
+      const token = generateToken(user.id);
       return res.json({
         success: true,
         message: 'Admin login successful',
@@ -200,12 +200,15 @@ router.post('/verify-otp', [
   try {
     const { email, otp } = req.body;
 
+    const { Op } = require('sequelize');
     const user = await User.findOne({ 
-      email, 
-      otpCode: otp,
-      otpExpiry: { $gt: Date.now() },
-      otpType: 'login'
-    }).select('+otpCode +otpExpiry');
+      where: {
+        email, 
+        otpCode: otp,
+        otpExpiry: { [Op.gt]: new Date() },
+        otpType: 'login'
+      }
+    });
 
     if (!user) {
       return res.status(400).json({
@@ -223,7 +226,7 @@ router.post('/verify-otp', [
     await user.save();
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.json({
       success: true,
@@ -251,7 +254,7 @@ router.post('/resend-otp', [
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -308,7 +311,7 @@ router.post('/forgot-password', [
 ], async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({
@@ -392,9 +395,12 @@ router.post('/reset-password/:token', [
       .update(req.params.token)
       .digest('hex');
 
+    const { Op } = require('sequelize');
     const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() }
+      where: {
+        resetPasswordToken,
+        resetPasswordExpire: { [Op.gt]: new Date() }
+      }
     });
 
     if (!user) {
@@ -430,7 +436,7 @@ router.post('/google-sync', async (req, res) => {
   try {
     const { email, firstName, lastName, role = 'buyer' } = req.body;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ where: { email } });
 
     if (!user) {
       user = await User.create({
@@ -443,7 +449,7 @@ router.post('/google-sync', async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.json({
       success: true,
@@ -460,7 +466,7 @@ router.post('/google-sync', async (req, res) => {
 // @access  Private
 router.get('/me', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
 
     res.json({
       success: true,
@@ -535,11 +541,10 @@ router.put('/update-profile', [
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updates,
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByPk(req.user.id);
+    if (user) {
+      await user.update(updates);
+    }
 
     res.json({
       success: true,
@@ -566,12 +571,15 @@ router.post('/verify-email-change', [
   try {
     const { otp } = req.body;
 
+    const { Op } = require('sequelize');
     const user = await User.findOne({
-      _id: req.user._id,
-      otpCode: otp,
-      otpExpiry: { $gt: Date.now() },
-      otpType: 'email_verification'
-    }).select('+otpCode +otpExpiry');
+      where: {
+        id: req.user.id,
+        otpCode: otp,
+        otpExpiry: { [Op.gt]: new Date() },
+        otpType: 'email_verification'
+      }
+    });
 
     if (!user) {
       return res.status(400).json({
@@ -608,11 +616,10 @@ router.put('/bank-details', auth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { bankDetails: req.body },
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByPk(req.user.id);
+    if (user) {
+      await user.update({ bankDetails: req.body });
+    }
 
     res.json({
       success: true,
@@ -631,7 +638,7 @@ router.put('/bank-details', auth, async (req, res) => {
 const { authorize } = require('../middleware/auth');
 router.get('/users', auth, authorize('admin'), async (req, res) => {
   try {
-    const users = await User.find({}).sort({ createdAt: -1 });
+    const users = await User.findAll({ order: [['createdAt', 'DESC']] });
     res.json({ success: true, data: users });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -644,7 +651,7 @@ router.get('/users', auth, authorize('admin'), async (req, res) => {
 // @access  Private (Admin only)
 router.patch('/users/:id/status', auth, authorize('admin'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -664,20 +671,15 @@ router.patch('/users/:id/status', auth, authorize('admin'), async (req, res) => 
 // @access  Private (Admin only)
 router.get('/analytics/users', auth, authorize('admin'), async (req, res) => {
   try {
-    const users = await User.aggregate([
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { "_id": 1 } },
-      { $limit: 30 } // Last 30 days
-    ]);
+    // For simplicity, using raw query or simplified group by
+    const { sequelize } = require('../config/db');
+    const results = await sequelize.query(
+      'SELECT DATE(createdAt) as date, COUNT(*) as count FROM Users GROUP BY DATE(createdAt) ORDER BY date ASC LIMIT 30',
+      { type: sequelize.QueryTypes.SELECT }
+    );
 
-    // Map to recharts format
-    const data = users.map(u => ({
-      date: u._id,
+    const data = results.map(u => ({
+      date: u.date,
       users: u.count
     }));
 
