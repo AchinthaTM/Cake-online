@@ -100,8 +100,8 @@ const BuyerDashboard = () => {
                     </thead>
                     <tbody>
                       {orders.map((order) => (
-                        <tr key={order._id}>
-                          <td>{order.orderNumber || '...'+order._id.substring(order._id.length-6)}</td>
+                        <tr key={order.id}>
+                          <td>{order.orderNumber || '...'+order.id.substring(order.id.length-6)}</td>
                           <td>
                             <strong>{order.seller?.sellerInfo?.businessName || 
                               (order.seller?.firstName + ' ' + order.seller?.lastName)}</strong>

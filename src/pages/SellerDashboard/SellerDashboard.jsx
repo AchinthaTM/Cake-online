@@ -35,7 +35,7 @@ const SellerDashboard = () => {
         const data = await response.json();
         if (data.success) {
           setCakes(data.data.map(p => ({
-            id: p._id, name: p.name, description: p.description, price: p.price,
+            id: p.id, name: p.name, description: p.description, price: p.price,
             category: p.category, type: p.type || 'cake', stock: p.stock || 0,
             weight: p.weight || '',
             isActive: p.isActive !== undefined ? p.isActive : true,
@@ -102,7 +102,7 @@ const SellerDashboard = () => {
       const data = await response.json();
       if (data.success) {
         const p = data.data;
-        setCakes([{ id: p._id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'cake', weight: p.weight || '',
+        setCakes([{ id: p.id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'cake', weight: p.weight || '',
           image: p.images && p.images.length > 0 ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) : '',
           createdAt: p.createdAt, isActive: true, stock: p.stock || 10 }, ...cakes]);
         setNewCake({ name: '', description: '', price: '', weight: '', category: 'Chocolate', image: '' });
@@ -157,7 +157,7 @@ const SellerDashboard = () => {
       const data = await response.json();
       if (data.success) {
         const p = data.data;
-        const updated = { id: p._id, name: p.name, description: p.description, price: p.price, category: p.category,
+        const updated = { id: p.id, name: p.name, description: p.description, price: p.price, category: p.category,
           weight: p.weight || '', type: p.type || editingCake.type, stock: p.stock, isActive: p.isActive,
           image: p.images && p.images.length > 0 ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) : '', createdAt: p.createdAt };
         setCakes(cakes.map(c => c.id === updated.id ? updated : c));
@@ -197,7 +197,7 @@ const SellerDashboard = () => {
       const data = await response.json();
       if (data.success) {
         const p = data.data;
-        setCakes([{ id: p._id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'bouquet',
+        setCakes([{ id: p.id, name: p.name, description: p.description, price: p.price, category: p.category, type: 'bouquet',
           image: p.images && p.images.length > 0 ? (p.images[0].url.startsWith('http') ? p.images[0].url : `http://localhost:5000${p.images[0].url}`) : '',
           createdAt: p.createdAt, isActive: true, stock: 10 }, ...cakes]);
         setNewBouquet({ name: '', description: '', price: '', category: 'Rose' });
@@ -217,7 +217,7 @@ const SellerDashboard = () => {
       });
       const data = await response.json();
       if (data.success) {
-        setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
         alert(newStatus === 'confirmed' ? 'Order Accepted! Email sent to buyer.' : 'Order Rejected. Email sent to buyer.');
       } else { alert(data.message || 'Error updating order'); }
     } catch (err) { alert('Server error updating order status'); }
@@ -291,8 +291,8 @@ const SellerDashboard = () => {
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order._id}>
-                        <td>{order.orderNumber || '...' + order._id.substring(order._id.length - 6)}</td>
+                      <tr key={order.id}>
+                        <td>{order.orderNumber || '...' + order.id.substring(order.id.length - 6)}</td>
                         <td>
                           <strong>{order.customer.firstName} {order.customer.lastName}</strong>
                           <div style={{ fontSize: '0.85rem', color: '#666' }}>{order.customer.email}</div>
@@ -310,8 +310,8 @@ const SellerDashboard = () => {
                         <td>
                           {order.status === 'pending' && (
                             <>
-                              <button className="edit_btn" style={{ backgroundColor: '#4CAF50', color: 'white', border: 'none', marginRight: '8px', cursor: 'pointer' }} onClick={() => handleUpdateOrderStatus(order._id, 'confirmed')}>Accept</button>
-                              <button className="delete_btn" style={{ cursor: 'pointer' }} onClick={() => handleUpdateOrderStatus(order._id, 'cancelled')}>Reject</button>
+                              <button className="edit_btn" style={{ backgroundColor: '#4CAF50', color: 'white', border: 'none', marginRight: '8px', cursor: 'pointer' }} onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}>Accept</button>
+                              <button className="delete_btn" style={{ cursor: 'pointer' }} onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}>Reject</button>
                             </>
                           )}
                         </td>

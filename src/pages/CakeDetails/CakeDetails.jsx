@@ -20,7 +20,7 @@ const CakeDetails = () => {
         if (data.success) {
           const p = data.data;
           setCake({
-            id: p._id,
+            id: p.id,
             name: p.name,
             description: p.description,
             fullDescription: p.description, // Reused description as fullDescription

@@ -14,7 +14,7 @@ const Bouquets = () => {
         const data = await response.json();
         if (data.success) {
           const formattedBouquets = data.data.map(p => ({
-            id: p._id,
+            id: p.id,
             name: p.name,
             shortDescription: p.description.length > 50 ? p.description.substring(0, 47) + '...' : p.description,
             description: p.description,

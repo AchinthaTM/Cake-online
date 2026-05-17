@@ -143,7 +143,7 @@ const OverviewTab = ({ data }) => {
           <h4>Recent Orders</h4>
           <div className="mini_list">
             {data.orders.slice(0, 5).map(order => (
-              <div key={order._id} className="mini_item">
+              <div key={order.id} className="mini_item">
                 <span>{order.orderNumber}</span>
                 <span className={`status_pill ${order.status}`}>{order.status}</span>
                 <span>Rs {order.total}</span>
@@ -197,7 +197,7 @@ const UsersTab = ({ users, refresh }) => {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user._id}>
+              <tr key={user.id}>
                 <td>
                   <div className="user_name_cell">
                     <strong>{user.firstName} {user.lastName}</strong>
@@ -217,7 +217,7 @@ const UsersTab = ({ users, refresh }) => {
                 <td>
                   <button 
                     className={`status_btn ${user.isActive ? 'deactivate' : 'activate'}`}
-                    onClick={() => handleToggleStatus(user._id)}
+                    onClick={() => handleToggleStatus(user.id)}
                   >
                     {user.isActive ? 'Deactivate' : 'Activate'}
                   </button>
@@ -263,7 +263,7 @@ const ProductsTab = ({ products, refresh }) => {
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product._id}>
+              <tr key={product.id}>
                 <td>
                   <strong>{product.name}</strong>
                 </td>
@@ -281,7 +281,7 @@ const ProductsTab = ({ products, refresh }) => {
                   </span>
                 </td>
                 <td>
-                  <button className="delete_btn" onClick={() => handleDelete(product._id)}>Delete</button>
+                  <button className="delete_btn" onClick={() => handleDelete(product.id)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -324,7 +324,7 @@ const OrdersTab = ({ orders, refresh }) => {
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order._id}>
+              <tr key={order.id}>
                 <td><code className="order_number">{order.orderNumber}</code></td>
                 <td>
                   <div>{order.customer?.firstName}</div>
@@ -335,7 +335,7 @@ const OrdersTab = ({ orders, refresh }) => {
                 <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                 <td><span className={`status_pill ${order.status}`}>{order.status}</span></td>
                 <td>
-                  <button className="delete_btn" onClick={() => handleDelete(order._id)}>Delete</button>
+                  <button className="delete_btn" onClick={() => handleDelete(order.id)}>Delete</button>
                 </td>
               </tr>
             ))}
